@@ -103,12 +103,58 @@ uint32_t fuck_off_callback(uint32_t trigger_time, void *cb_arg) {
         host_mouse_send(&report);
     }
 
-    // BUTTON 1
-    report_mouse_t report = {0};
-    report.x = 128;
-    report.y = 128;
-    host_mouse_send(&report);
-    tap_code(MS_BTN1);
+    int32_t x_coords[] = {120, 300, 0};
+    int32_t y_coords[] = {240, 300, 0};
+    int32_t curr_x = 0;
+    int32_t curr_y = 0;
+
+    // BUTTONS
+    for (size_t i = 0; i != sizeof(x_coords) / sizeof(x_coords[0]); ++i) {
+        int32_t new_x = x_coords[i];
+        int32_t new_y = y_coords[i];
+        int32_t delta_x = new_x - curr_x;
+        bool x_sign = delta_x > 0;
+        delta_x = abs(delta_x);
+        int32_t delta_y = curr_y - new_y;
+        bool y_sign = delta_y > 0;
+        delta_y = abs(delta_y);
+
+        int32_t x_chunks = delta_x / 120;
+        int32_t x_nudge = (delta_x % 120) * (x_sign ? 1 : -1);
+        int32_t y_chunks = delta_y / 120;
+        int32_t y_nudge = (delta_y % 120) * (y_sign ? 1 : -1);
+
+        // LARGE MOVEMENTS
+        for (size_t j = 0; j != x_chunks; ++j) {
+            int32_t to_add = 120 * (x_sign ? 1 : -1);
+            curr_x += to_add;
+
+            report_mouse_t report = {0};
+            report.x = to_add;
+            host_mouse_send(&report);
+        }
+
+        for (size_t j = 0; j != y_chunks; ++j) {
+            int32_t to_add = 120 * (y_sign ? 1 : -1);
+            curr_y += to_add;
+
+            report_mouse_t report = {0};
+            report.y = to_add;
+            host_mouse_send(&report);
+        }
+
+        // NUDGES
+        curr_x += x_nudge;
+        curr_y += y_nudge;
+
+        report_mouse_t report = {0};
+        report.x = x_nudge;
+        report.y = y_nudge;
+        host_mouse_send(&report);
+
+        // CLICK
+        tap_code(MS_BTN1);
+    }
 
     // Random cooldown between 2:30 and 3:10 minutes
     timer = timer_read();
