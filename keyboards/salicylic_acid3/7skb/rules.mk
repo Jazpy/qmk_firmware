@@ -1,1 +1,4 @@
 DEFAULT_FOLDER = salicylic_acid3/7skb/rev1
+MOUSE_ENABLE = yes
+MOUSEKEY_ENABLE = yes
+DEFERRED_EXEC_ENABLE = yes

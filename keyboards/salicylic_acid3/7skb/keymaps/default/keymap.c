@@ -19,7 +19,8 @@ enum layer_number {
 };
 
 enum custom_keycodes {
-  RGB_RST = SAFE_RANGE
+  RGB_RST = SAFE_RANGE,
+  FUCK_OFF
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -33,7 +34,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
       KC_LSFT,    KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,        KC_N,    KC_M, KC_COMM,  KC_DOT, KC_SLSH, KC_RSFT, MO(_FN),
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
-               KC_LALT, KC_LGUI,  KC_SPC,  KC_SPC,               KC_SPC,  KC_SPC,          KC_RGUI, KC_RALT 
+               KC_LALT, KC_LGUI,  KC_SPC,  KC_SPC,               KC_SPC,  KC_SPC,          KC_RGUI, KC_RALT
           //`---------------------------------------------|   |--------------------------------------------'
   ),
 
@@ -47,7 +48,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
       _______, _______, _______, _______, _______, _______,     _______, _______,  KC_END, KC_PGDN, KC_DOWN, _______, _______,
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
-               _______, _______, _______, _______,              _______, _______,          KC_STOP, _______ 
+               _______, _______, _______, _______,              _______, _______,         KC_STOP, FUCK_OFF
           //`---------------------------------------------|   |--------------------------------------------'
   ),
 
@@ -61,7 +62,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
       XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,     UG_VALD, UG_VALU, UG_HUED, UG_HUEU, UG_SATD, UG_SATU, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
-               XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,              XXXXXXX, XXXXXXX,          KC_STOP, XXXXXXX 
+               XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,              XXXXXXX, XXXXXXX,          KC_STOP, XXXXXXX
           //`---------------------------------------------|   |--------------------------------------------'
   )
 };
@@ -86,30 +87,49 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 return state;
 }
 
+uint32_t fuck_off_callback(uint32_t trigger_time, void *cb_arg) {
+    static uint32_t timer = 0;
+    static uint32_t cooldown = 0;
+
+    if (timer != 0 && timer_elapsed(timer) < cooldown) {
+        return 200;
+    }
+
+    // TOP LEFT
+    for (size_t i = 0; i != 5; ++i) {
+        report_mouse_t report = {0};
+        report.x = -128;
+        report.y = -128;
+        host_mouse_send(&report);
+    }
+
+    // BUTTON 1
+    report_mouse_t report = {0};
+    report.x = 128;
+    report.y = 128;
+    host_mouse_send(&report);
+    tap_code(MS_BTN1);
+
+    // Random cooldown between 2:30 and 3:10 minutes
+    timer = timer_read();
+    cooldown = 150000 + (rand() % 40000);
+
+    return 120000;
+}
+
 int RGB_current_mode;
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-  bool result = false;
-  switch (keycode) {
-    #ifdef RGBLIGHT_ENABLE
-      case QK_UNDERGLOW_MODE_NEXT:
-          if (record->event.pressed) {
-            rgblight_mode(RGB_current_mode);
-            rgblight_step();
-            RGB_current_mode = rgblight_config.mode;
-          }
-        break;
-      case RGB_RST:
-          if (record->event.pressed) {
-            eeconfig_update_rgblight_default();
-            rgblight_enable();
-            RGB_current_mode = rgblight_config.mode;
-          }
-        break;
-    #endif
-    default:
-      result = true;
-      break;
-  }
+    bool result = false;
+    static deferred_token token = INVALID_DEFERRED_TOKEN;
 
-  return result;
+    if (record->event.pressed && keycode == FUCK_OFF && !token) {
+        token = defer_exec(1, fuck_off_callback, NULL);
+    } else if (record->event.pressed && token) {
+        cancel_deferred_exec(token);
+        token = INVALID_DEFERRED_TOKEN;
+        report_mouse_t report = {0};
+        host_mouse_send(&report);
+    }
+
+    return result;
 }
