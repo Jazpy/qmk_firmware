@@ -65,7 +65,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     return state;
 }
 
-void click_buttons(int32_t *x_coords, int32_t *y_coords) {
+void click_buttons(int32_t *x_coords, int32_t *y_coords, size_t arr_len) {
     // TOP LEFT
     int32_t curr_x = 0;
     int32_t curr_y = 0;
@@ -77,7 +77,7 @@ void click_buttons(int32_t *x_coords, int32_t *y_coords) {
     }
 
     // CLICK BUTTONS
-    for (size_t i = 0; i != sizeof(x_coords) / sizeof(x_coords[0]); ++i) {
+    for (size_t i = 0; i != arr_len; ++i) {
         int32_t new_x = x_coords[i];
         int32_t new_y = y_coords[i];
 
@@ -134,9 +134,10 @@ uint32_t refresh_callback(uint32_t trigger_time, void *cb_arg) {
     // Button positions
     int32_t x_coords[] = {0};
     int32_t y_coords[] = {0};
+    size_t arr_len = sizeof(x_coords) / sizeof(x_coords[0]);
 
     // Click'em
-    click_buttons(x_coords, y_coords);
+    click_buttons(x_coords, y_coords, arr_len);
 
     // Refresh page
     tap_code(KC_F5);
@@ -149,9 +150,10 @@ uint32_t report_callback(uint32_t trigger_time, void *cb_arg) {
     // Button positions
     int32_t x_coords[] = {300, 0};
     int32_t y_coords[] = {300, 0};
+    size_t arr_len = sizeof(x_coords) / sizeof(x_coords[0]);
 
     // Click'em
-    click_buttons(x_coords, y_coords);
+    click_buttons(x_coords, y_coords, arr_len);
 
     // Random cooldown between 2:30 and 3:10 minutes
     return 150000 + (rand() % 40000);
@@ -161,15 +163,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     bool result = true;
     static deferred_token token_0 = INVALID_DEFERRED_TOKEN;
     static deferred_token token_1 = INVALID_DEFERRED_TOKEN;
+    static bool fuck_off_mode = false;
 
-    if (record->event.pressed && keycode == FUCK_OFF && !token) {
+    if (record->event.pressed && keycode == FUCK_OFF && !fuck_off_mode) {
         token_0 = defer_exec(1, report_callback, NULL);
         token_1 = defer_exec(1, refresh_callback, NULL);
-    } else if (record->event.pressed && token_0) {
+        fuck_off_mode = true;
+    } else if (record->event.pressed && fuck_off_mode) {
         cancel_deferred_exec(token_0);
         cancel_deferred_exec(token_1);
         token_0 = INVALID_DEFERRED_TOKEN;
         token_1 = INVALID_DEFERRED_TOKEN;
+        fuck_off_mode = false;
     }
 
     return result;
