@@ -1,11 +1,5 @@
 #include QMK_KEYBOARD_H
 
-
-#ifdef RGBLIGHT_ENABLE
-//Following line allows macro to read current RGB settings
-extern rgblight_config_t rgblight_config;
-#endif
-
 extern uint8_t is_master;
 
 // Each layer gets a name for readability, which is then used in the keymap matrix below.
@@ -66,29 +60,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   )
 };
 
-
-//A description for expressing the layer position in LED mode.
+// A description for expressing the layer position in LED mode.
 layer_state_t layer_state_set_user(layer_state_t state) {
-#ifdef RGBLIGHT_ENABLE
-    switch (get_highest_layer(state)) {
-    case _FN:
-      rgblight_sethsv_at(HSV_BLUE, 0);
-      break;
-    case _ADJUST:
-      rgblight_sethsv_at(HSV_PURPLE, 0);
-      break;
-    default: //  for any other layers, or the default layer
-      rgblight_sethsv_at( 0, 0, 0, 0);
-      break;
-    }
-    rgblight_set_effect_range( 1, 11);
-#endif
-return state;
+    return state;
 }
 
-uint32_t timer = 0;
-uint32_t cooldown = 0;
-uint32_t fuck_off_callback(uint32_t trigger_time, void *cb_arg) {
+void click_buttons(int32_t *x_coords, int32_t *y_coords) {
     // TOP LEFT
     int32_t curr_x = 0;
     int32_t curr_y = 0;
@@ -99,10 +76,7 @@ uint32_t fuck_off_callback(uint32_t trigger_time, void *cb_arg) {
         host_mouse_send(&report);
     }
 
-    int32_t x_coords[] = {300, 0};
-    int32_t y_coords[] = {300, 0};
-
-    // BUTTONS
+    // CLICK BUTTONS
     for (size_t i = 0; i != sizeof(x_coords) / sizeof(x_coords[0]); ++i) {
         int32_t new_x = x_coords[i];
         int32_t new_y = y_coords[i];
@@ -154,26 +128,48 @@ uint32_t fuck_off_callback(uint32_t trigger_time, void *cb_arg) {
         tap_code(MS_BTN1);
         wait_ms(100);
     }
-
-    // Random cooldown between 2:30 and 3:10 minutes
-    timer = timer_read();
-    cooldown = 150000;
-
-    return rand() % 10000;
 }
 
-int RGB_current_mode;
+uint32_t refresh_callback(uint32_t trigger_time, void *cb_arg) {
+    // Button positions
+    int32_t x_coords[] = {0};
+    int32_t y_coords[] = {0};
+
+    // Click'em
+    click_buttons(x_coords, y_coords);
+
+    // Refresh page
+    tap_code(KC_F5);
+
+    // Random cooldown between 15 and 25 seconds
+    return 15000 + (rand() % 10000);
+}
+
+uint32_t report_callback(uint32_t trigger_time, void *cb_arg) {
+    // Button positions
+    int32_t x_coords[] = {300, 0};
+    int32_t y_coords[] = {300, 0};
+
+    // Click'em
+    click_buttons(x_coords, y_coords);
+
+    // Random cooldown between 2:30 and 3:10 minutes
+    return 150000 + (rand() % 40000);
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     bool result = true;
-    static deferred_token token = INVALID_DEFERRED_TOKEN;
+    static deferred_token token_0 = INVALID_DEFERRED_TOKEN;
+    static deferred_token token_1 = INVALID_DEFERRED_TOKEN;
 
     if (record->event.pressed && keycode == FUCK_OFF && !token) {
-        token = defer_exec(1, fuck_off_callback, NULL);
-    } else if (record->event.pressed && token) {
-        timer = 0;
-        cooldown = 0;
-        cancel_deferred_exec(token);
-        token = INVALID_DEFERRED_TOKEN;
+        token_0 = defer_exec(1, report_callback, NULL);
+        token_1 = defer_exec(1, refresh_callback, NULL);
+    } else if (record->event.pressed && token_0) {
+        cancel_deferred_exec(token_0);
+        cancel_deferred_exec(token_1);
+        token_0 = INVALID_DEFERRED_TOKEN;
+        token_1 = INVALID_DEFERRED_TOKEN;
     }
 
     return result;
