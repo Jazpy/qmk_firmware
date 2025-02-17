@@ -19,8 +19,7 @@ enum layer_number {
 };
 
 enum custom_keycodes {
-  RGB_RST = SAFE_RANGE,
-  FUCK_OFF
+  FUCK_OFF = SAFE_RANGE,
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -56,7 +55,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //,-----------------------------------------------------|   |--------------------------------------------------------------------------------.
   TG(_ADJUST), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,     XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,   QK_BOOT,
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------+--------+--------|
-      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,     RGB_RST, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,     XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------+--------|
       XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,     UG_TOGG, UG_NEXT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
@@ -87,36 +86,32 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 return state;
 }
 
+uint32_t timer = 0;
+uint32_t cooldown = 0;
 uint32_t fuck_off_callback(uint32_t trigger_time, void *cb_arg) {
-    static uint32_t timer = 0;
-    static uint32_t cooldown = 0;
-
-    if (timer != 0 && timer_elapsed(timer) < cooldown) {
-        return 200;
-    }
-
     // TOP LEFT
-    for (size_t i = 0; i != 5; ++i) {
+    int32_t curr_x = 0;
+    int32_t curr_y = 0;
+    for (size_t i = 0; i != 20; ++i) {
         report_mouse_t report = {0};
-        report.x = -128;
-        report.y = -128;
+        report.x = -120;
+        report.y = -120;
         host_mouse_send(&report);
     }
 
-    int32_t x_coords[] = {120, 300, 0};
-    int32_t y_coords[] = {240, 300, 0};
-    int32_t curr_x = 0;
-    int32_t curr_y = 0;
+    int32_t x_coords[] = {300, 0};
+    int32_t y_coords[] = {300, 0};
 
     // BUTTONS
     for (size_t i = 0; i != sizeof(x_coords) / sizeof(x_coords[0]); ++i) {
         int32_t new_x = x_coords[i];
         int32_t new_y = y_coords[i];
+
         int32_t delta_x = new_x - curr_x;
-        bool x_sign = delta_x > 0;
+        bool x_sign = delta_x >= 0;
         delta_x = abs(delta_x);
-        int32_t delta_y = curr_y - new_y;
-        bool y_sign = delta_y > 0;
+        int32_t delta_y = new_y - curr_y;
+        bool y_sign = delta_y >= 0;
         delta_y = abs(delta_y);
 
         int32_t x_chunks = delta_x / 120;
@@ -132,6 +127,7 @@ uint32_t fuck_off_callback(uint32_t trigger_time, void *cb_arg) {
             report_mouse_t report = {0};
             report.x = to_add;
             host_mouse_send(&report);
+            wait_ms(100);
         }
 
         for (size_t j = 0; j != y_chunks; ++j) {
@@ -141,6 +137,7 @@ uint32_t fuck_off_callback(uint32_t trigger_time, void *cb_arg) {
             report_mouse_t report = {0};
             report.y = to_add;
             host_mouse_send(&report);
+            wait_ms(100);
         }
 
         // NUDGES
@@ -151,30 +148,32 @@ uint32_t fuck_off_callback(uint32_t trigger_time, void *cb_arg) {
         report.x = x_nudge;
         report.y = y_nudge;
         host_mouse_send(&report);
+        wait_ms(100);
 
         // CLICK
         tap_code(MS_BTN1);
+        wait_ms(100);
     }
 
     // Random cooldown between 2:30 and 3:10 minutes
     timer = timer_read();
-    cooldown = 150000 + (rand() % 40000);
+    cooldown = 150000;
 
-    return 120000;
+    return rand() % 10000;
 }
 
 int RGB_current_mode;
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    bool result = false;
+    bool result = true;
     static deferred_token token = INVALID_DEFERRED_TOKEN;
 
     if (record->event.pressed && keycode == FUCK_OFF && !token) {
         token = defer_exec(1, fuck_off_callback, NULL);
     } else if (record->event.pressed && token) {
+        timer = 0;
+        cooldown = 0;
         cancel_deferred_exec(token);
         token = INVALID_DEFERRED_TOKEN;
-        report_mouse_t report = {0};
-        host_mouse_send(&report);
     }
 
     return result;
