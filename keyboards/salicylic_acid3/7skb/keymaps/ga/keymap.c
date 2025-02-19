@@ -65,7 +65,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     return state;
 }
 
-void click_buttons(int32_t *x_coords, int32_t *y_coords, size_t arr_len, bool click) {
+void click_buttons(int32_t *x_coords, int32_t *y_coords, size_t arr_len, bool click, int32_t click_delay) {
     // TOP LEFT
     int32_t curr_x = 0;
     int32_t curr_y = 0;
@@ -127,7 +127,7 @@ void click_buttons(int32_t *x_coords, int32_t *y_coords, size_t arr_len, bool cl
         // CLICK
         if (click)
             tap_code(MS_BTN1);
-        wait_ms(5000);
+        wait_ms(click_delay);
     }
 }
 
@@ -138,7 +138,7 @@ uint32_t refresh_callback(uint32_t trigger_time, void *cb_arg) {
     size_t arr_len = sizeof(x_coords) / sizeof(x_coords[0]);
 
     // Click'em
-    click_buttons(x_coords, y_coords, arr_len, true);
+    click_buttons(x_coords, y_coords, arr_len, true, 100);
 
     // Refresh page
     tap_code(KC_F5);
@@ -155,25 +155,21 @@ uint32_t report_callback(uint32_t trigger_time, void *cb_arg) {
     int32_t activity_y = 110;
     int32_t start_x = 250;
     int32_t start_y = 182;
-    
+
     int32_t x_coords[] = {start_activity_x, start_activity_x, activity_x};
     int32_t y_coords[] = {start_activity_y, start_activity_y, activity_y};
     size_t arr_len = sizeof(x_coords) / sizeof(x_coords[0]);
 
     // Click'em
-    click_buttons(x_coords, y_coords, arr_len, true);
+    click_buttons(x_coords, y_coords, arr_len, true, 5000);
 
-    // 'inv' string
-    tap_code(KC_I);
-    wait_ms(500);
-    tap_code(KC_N);
-    wait_ms(500);
-    tap_code(KC_V);
-    wait_ms(500);
+    // 'inve' string
+    SEND_STRING("inve");
+    wait_ms(50);
     tap_code(KC_DOWN);
-    wait_ms(500);
+    wait_ms(50);
     tap_code(KC_ENT);
-    wait_ms(500);
+    wait_ms(50);
 
     // Final button
     int32_t x_coords_f[] = {start_x};
@@ -181,8 +177,8 @@ uint32_t report_callback(uint32_t trigger_time, void *cb_arg) {
     arr_len = sizeof(x_coords_f) / sizeof(x_coords_f[0]);
 
     // Click'em
-    click_buttons(x_coords_f, y_coords_f, arr_len, true);
-    
+    click_buttons(x_coords_f, y_coords_f, arr_len, true, 100);
+
     // Random cooldown between 3:30 and 3:50 minutes
     return 210000 + (rand() % 20000);
 }
