@@ -14,6 +14,7 @@ enum layer_number {
 
 enum custom_keycodes {
   FUCK_OFF = SAFE_RANGE,
+  SAY_A, SAY_B, SAY_C, SAY_D
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -33,7 +34,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
   [_FN] = LAYOUT(
   //,-----------------------------------------------------|   |--------------------------------------------------------------------------------.
-      _______,   KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,       KC_F6,   KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,  KC_INS, KC_PSCR,
+  TG(_ADJUST),   KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,       KC_F6,   KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,  KC_INS, KC_PSCR,
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------+--------+--------|
       _______, _______, KC_UP, _______, _______, _______,     _______, _______, _______, _______,_______,  KC_PGUP, KC_PGDN, KC_BSPC,
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------+--------|
@@ -41,7 +42,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
       _______, _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______, _______, _______,
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
-            TG(_ADJUST), _______, _______, _______,              _______, _______,         _______, FUCK_OFF
+                 SAY_A,   SAY_B,   SAY_C,   SAY_D,              _______, _______,          _______, FUCK_OFF
           //`---------------------------------------------|   |--------------------------------------------'
   ),
 
@@ -164,12 +165,18 @@ uint32_t report_callback(uint32_t trigger_time, void *cb_arg) {
     click_buttons(x_coords, y_coords, arr_len, true, 5000);
 
     // 'inve' string
-    SEND_STRING("inve");
-    wait_ms(50);
+    tap_code(KC_I);
+    wait_ms(500);
+    tap_code(KC_N);
+    wait_ms(500);
+    tap_code(KC_V);
+    wait_ms(500);
+    tap_code(KC_E);
+    wait_ms(500);
     tap_code(KC_DOWN);
-    wait_ms(50);
+    wait_ms(500);
     tap_code(KC_ENT);
-    wait_ms(50);
+    wait_ms(500);
 
     // Final button
     int32_t x_coords_f[] = {start_x};
@@ -179,8 +186,8 @@ uint32_t report_callback(uint32_t trigger_time, void *cb_arg) {
     // Click'em
     click_buttons(x_coords_f, y_coords_f, arr_len, true, 100);
 
-    // Random cooldown between 3:30 and 3:50 minutes
-    return 210000 + (rand() % 20000);
+    // Random cooldown between 3:20 and 3:55 minutes
+    return 200000 + (rand() % 35000);
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -199,6 +206,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         token_0 = INVALID_DEFERRED_TOKEN;
         token_1 = INVALID_DEFERRED_TOKEN;
         fuck_off_mode = false;
+    }
+
+    if (record->event.pressed) {
+        switch (keycode) {
+        case SAY_A:
+            SEND_STRING("No violations were found.");
+            break;
+        case SAY_B:
+            SEND_STRING("Route goes through a gated community.");
+            break;
+        case SAY_C:
+            SEND_STRING("Route goes into private property.");
+            break;
+        case SAY_D:
+            SEND_STRING("Route is in an unsafe area.");
+            break;
+        }
     }
 
     return result;
