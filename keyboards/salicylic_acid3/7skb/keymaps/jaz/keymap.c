@@ -41,7 +41,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
       _______,  KC_1,      KC_2,    KC_3, _______, _______,     _______, _______, KC_END,  KC_PGDN, _______,MO(_MAGIC), _______,
   //|--------+--------+--------+--------+--------+--------|   |--------+--------+--------+--------+--------+--------+--------|
-             _______,   KC_RGUI, KC_RALT,   KC_P0,              KC_SLEP, KC_WAKE,          _______, MIX_M
+             _______,   KC_RGUI, KC_RALT,    KC_0,              KC_SLEP, KC_WAKE,          _______, MIX_M
           //`---------------------------------------------|   |--------------------------------------------'
   ),
 
@@ -59,13 +59,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
           //`---------------------------------------------|   |--------------------------------------------'
   )
 };
-
-// A description for expressing the layer position in LED mode.
-/*
-layer_state_t layer_state_set_user(layer_state_t state) {
-    return state;
-}
-*/
 
 void mix_f(void) {
     SEND_STRING("cd ~/Doc\tmi\tmi\t\n");
