@@ -1,5 +1,10 @@
 #include QMK_KEYBOARD_H
 
+#ifdef RGBLIGHT_ENABLE
+// Following line allows macro to read current RGB settings
+extern rgblight_config_t rgblight_config;
+#endif
+
 extern uint8_t is_master;
 
 // Each layer gets a name for readability, which is then used in the keymap matrix below.
@@ -59,6 +64,25 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
           //`---------------------------------------------|   |--------------------------------------------'
   )
 };
+
+// A description for expressing the layer position in LED mode.
+layer_state_t layer_state_set_user(layer_state_t state) {
+    #ifdef RGBLIGHT_ENABLE
+    switch (get_highest_layer(state)) {
+    case _FN:
+      rgblight_setrgb_at(0, 0, 255, 0);
+      break;
+    case _MAGIC:
+      rgblight_sethsv_at(255, 0, 255, 0);
+      break;
+    default: //  for any other layers, or the default layer
+      rgblight_setrgb_at(0, 255, 0, 0);
+      break;
+    }
+    rgblight_set_effect_range(1, 11);
+    #endif
+    return state;
+}
 
 void mix_f(void) {
     SEND_STRING("cd ~/Doc\tmi\tmi\t\n");
